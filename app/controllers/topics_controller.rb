@@ -1301,21 +1301,32 @@ class TopicsController < ApplicationController
 
   def track_visit_to_topic
     topic_id = @topic_view.topic.id
-    ip = request.remote_ip
     user_id = (current_user.id if current_user)
 
     if !request.format.json?
+      # Support both user id and username for backward compatibility
+      u_param = request["u"]
+      username = nil
+      tracked_user_id = nil
+      if u_param.present?
+        if u_param.to_s =~ /^\d+$/
+          # If u_param is all digits, treat as user id
+          tracked_user_id = u_param.to_i
+        else
+          # Otherwise, treat as username
+          username = u_param
+        end
+      end
       hash = {
         referer: request.referer || flash[:referer],
         host: request.host,
         current_user: current_user,
         topic_id: @topic_view.topic.id,
         post_number: @topic_view.current_post_number,
-        username: request["u"],
+        username: username,
+        user_id: tracked_user_id,
         ip_address: request.remote_ip,
       }
-      # defer this way so we do not capture the whole controller
-      # in the closure
       TopicsController.defer_add_incoming_link(hash)
     end
 

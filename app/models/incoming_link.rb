@@ -16,12 +16,17 @@ class IncomingLink < ActiveRecord::Base
     user_id, host, referer = nil
     current_user = opts[:current_user]
 
-    username = opts[:username]
-    username = nil if !(String === username)
-    username = nil if username&.include?("\0")
-    if username
-      u = User.select(:id).find_by(username_lower: username.downcase)
-      user_id = u.id if u
+    # Accept user_id directly if provided (from ?u=<user.id>), fallback to username for legacy links
+    if opts[:user_id].present?
+      user_id = opts[:user_id].to_i
+    else
+      username = opts[:username]
+      username = nil if !(String === username)
+      username = nil if username&.include?("\0")
+      if username
+        u = User.select(:id).find_by(username_lower: username.downcase)
+        user_id = u.id if u
+      end
     end
     ip_address = opts[:ip_address]
 
